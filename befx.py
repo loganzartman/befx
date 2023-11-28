@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import argparse
+import sys
 from dataclasses import dataclass
 from enum import Enum
 from random import choice
@@ -93,7 +94,7 @@ def step_pc(state: State):
     y -= 1
   state.pc = (x % state.program.w, y % state.program.h)
 
-def execute_instruction(state: State, c: str):
+def execute_instruction(state: State, c: str, *, interactive: bool):
   if state.stringmode and c != '"':
     state.push(ord(c))
     return
@@ -196,14 +197,14 @@ def execute_instruction(state: State, c: str):
   elif c == '&':
     while True:
       try:
-        val = int(read_input(state, "Input integer > "))
+        val = int(read_input("Input integer > ", interactive))
         state.push(val)
         break
       except ValueError:
         print("Invalid input")
   elif c == '~':
     while True:
-      char = read_input(state, "Input character > ")
+      char = read_input("Input character > ", interactive)
       if len(char) == 1:
         state.push(ord(char))
         break
@@ -215,26 +216,29 @@ def execute_instruction(state: State, c: str):
   else:
     raise NotImplementedError(f'Unsupported command "{c}"')
 
-def step_state(state: State):
+def step_state(state: State, *, interactive: bool):
   x, y = state.pc
   c = state.program[x, y]
-  execute_instruction(state, c)
+  execute_instruction(state, c, interactive=interactive)
   step_pc(state)
 
-def read_input(state: State, prompt: str):
-  term.write('\n')
-  term.cursor()
-  term.sgr('33')
-  term.flush()
-  
-  print(prompt, end="")
-  term.sgr('0')
-  term.flush()
+def read_input(prompt: str, interactive: bool):
+  if interactive:
+    term.write('\n')
+    term.cursor()
+    term.sgr('33')
+    term.flush()
+    
+    print(prompt, end="")
+    term.sgr('0')
+    term.flush()
 
-  result = input()
+    result = input()
 
-  term.flush()
-  return result
+    term.flush()
+    return result
+  else:
+    return sys.stdin.readline()
 
 def draw_program(state: State):
   pc_x, pc_y = state.pc
@@ -287,7 +291,7 @@ def start_app(state: State, framerate: int):
     while True:
       try:
         draw_state(state)
-        step_state(state)
+        step_state(state, interactive=True)
         sleep(1/framerate)
       except ExitProgram:
         break
@@ -297,23 +301,30 @@ def start_app(state: State, framerate: int):
     term.reset()
     term.flush()
 
-def run_to_exit(state: State):
+def run_to_exit(state: State, *, interactive: bool):
+  output_buffer: list[str] = []
   try:
     while True:
       try:
-        step_state(state)
-        print(state.get_output(), end="")
+        step_state(state, interactive=interactive)
+        new_output = state.get_output()
         state.output.clear()
+
+        if interactive:
+          print(new_output, end="")
+        output_buffer.append(new_output)
       except ExitProgram:
         break
   except KeyboardInterrupt:
     pass
-  print()
+  if interactive:
+    print()
+  return "".join(output_buffer)
 
-def exec_befunge(src: str):
+def exec_befunge(src: str, *, interactive: bool=False):
   program = load_program(src)
   state = create_state(program)
-  run_to_exit(state)
+  return run_to_exit(state, interactive=interactive)
 
 def viz_befunge(src: str, framerate: int):
   program = load_program(src)
@@ -323,8 +334,11 @@ def viz_befunge(src: str, framerate: int):
 def main(path: str, framerate: int, headless: bool):
   with open(path, "r") as f:
     src = f.read()
-    if headless:
-      exec_befunge(src)
+    if headless or not sys.stdout.isatty():
+      is_tty = sys.stdin.isatty() and sys.stdout.isatty()
+      result = exec_befunge(src, interactive=is_tty)
+      if not is_tty:
+        print(result)
     else:
       viz_befunge(src, framerate)
 
