@@ -16,6 +16,9 @@ def noalt():
 def clear():
   write("\x1b[2J\x1b[H")
 
+def clear_down():
+  write("\x1b[0J")
+
 def sgr(val: str):
   write(f"\x1b[{val}m")
 

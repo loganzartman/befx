@@ -195,8 +195,7 @@ def step_state(state: State):
   step_pc(state)
 
 def read_input(state: State, prompt: str):
-  term.savecursor()
-  term.moveto(0, state.program.h + 2)
+  term.write('\n')
   term.cursor()
   term.sgr('33')
   term.flush()
@@ -207,13 +206,10 @@ def read_input(state: State, prompt: str):
 
   result = input()
 
-  term.loadcursor()
   term.flush()
   return result
 
-def draw_state(state: State):
-  term.clear()
-  term.nocursor()
+def draw_program(state: State):
   pc_x, pc_y = state.pc
   for y, line in enumerate(state.program.lines):
     for x, char in enumerate(line.ljust(state.program.w)):
@@ -225,11 +221,36 @@ def draw_state(state: State):
       else:
         term.write(char)
     term.write('\n')
+
+def draw_stack(state: State):
+  term.sgr('34')
+  items_int = ", ".join(str(x) for x in state.stack)
+  items_str = ", ".join(chr(x) for x in state.stack)
+  term.write(f"Stack (int): {items_int}\n")
+  term.write(f"Stack (str): {items_str}\n")
+  term.sgr('0')
+  
+def draw_output(state: State):
+  term.sgr('32')
+  term.write("Output:\n")
+  term.sgr('0')
+  term.write(state.get_output())
+  term.sgr('0')
+
+def draw_state(state: State):
+  term.loadcursor()
+  term.savecursor()
+  term.clear_down()
+  term.nocursor()
+  draw_program(state)
+  term.write("\n")
+  draw_stack(state)
+  draw_output(state)
   term.flush()
 
 def start_app(state: State):
   try:
-    term.alt()
+    term.savecursor()
     while True:
       try:
         draw_state(state)
@@ -238,12 +259,11 @@ def start_app(state: State):
       except ExitProgram:
         break
   except KeyboardInterrupt:
-    term.clear()
+    pass
   finally:
-    term.noalt()
     term.reset()
     term.flush()
-    print(state.get_output())
+    # print(state.get_output())
 
 def main(path: str):
   with open(path, "r") as f:
