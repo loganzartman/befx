@@ -24,7 +24,19 @@ class Program:
         if x < len(line):
           return line[x]
         return ' '
-    raise Exception(f'Index out of bounds: {index}')
+    raise IndexError(f'Index out of bounds: {index}')
+
+  def __setitem__(self, index: tuple[int, int], val: str):
+    assert len(val) == 1
+    x, y = index
+    if 0 <= y < self.h:
+      if 0 <= x < self.w:
+        line = self.lines[y]
+        if x > len(line):
+          line = line.ljust(self.w)
+        self.lines[y] = f'{line[:x]}{val}{line[x+1:]}'
+        return
+    raise IndexError(f'Index out of bounds: {index}')
 
 class Direction(Enum):
   RIGHT = 0
@@ -168,9 +180,18 @@ def execute_instruction(state: State, c: str):
   elif c == '#':
     step_pc(state)
   elif c == 'g':
-    raise NotImplementedError()
+    y = state.pop()
+    x = state.pop()
+    try:
+      code = ord(state.program[x, y])
+    except IndexError:
+      code = 0
+    state.push(code)
   elif c == 'p':
-    raise NotImplementedError()
+    y = state.pop()
+    x = state.pop()
+    v = state.pop()
+    state.program[x, y] = chr(v)
   elif c == '&':
     while True:
       try:
