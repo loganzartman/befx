@@ -174,7 +174,7 @@ def execute_instruction(state: State, c: str):
     state.pop()
   elif c == '.':
     a = state.pop()
-    state.output.append(str(a))
+    state.output.append(f"{str(a)} ")
   elif c == ',':
     a = state.pop()
     state.output.append(chr(a))
