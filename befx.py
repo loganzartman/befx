@@ -310,15 +310,23 @@ def run_to_exit(state: State):
     pass
   print()
 
+def exec_befunge(src: str):
+  program = load_program(src)
+  state = create_state(program)
+  run_to_exit(state)
+
+def viz_befunge(src: str, framerate: int):
+  program = load_program(src)
+  state = create_state(program)
+  start_app(state, framerate)
+
 def main(path: str, framerate: int, headless: bool):
   with open(path, "r") as f:
     src = f.read()
-    program = load_program(src)
-    state = create_state(program)
     if headless:
-      run_to_exit(state)
+      exec_befunge(src)
     else:
-      start_app(state, framerate)
+      viz_befunge(src, framerate)
 
 def parse_args():
   parser = argparse.ArgumentParser(description="Animation script arguments")

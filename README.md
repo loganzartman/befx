@@ -28,4 +28,14 @@ Headless mode; no visualization:
 python befx.py -H examples/helloworld.befunge
 ```
 
+## as a library
+
+Probably don't do this, but if you insist:
+
+```python
+from befx import exec_befunge
+
+exec_befunge('"!dlroW olleH">:#,_@')
+```
+
 [befunge]: https://esolangs.org/wiki/Befunge
