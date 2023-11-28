@@ -10,7 +10,7 @@ class Program:
   w: int
   h: int
   
-  def __getitem__(self, index):
+  def __getitem__(self, index: tuple[int, int]):
     x, y = index
     if 0 <= y < self.h:
       if 0 <= x < self.w:
@@ -18,7 +18,7 @@ class Program:
         if x < len(line):
           return line[x]
         return ' '
-    raise Error(f'Index out of bounds: {index}')
+    raise Exception(f'Index out of bounds: {index}')
 
 class Direction(Enum):
   RIGHT = 0
@@ -33,21 +33,21 @@ class State:
   pc: tuple[int, int]
   direction: Direction
 
-def load_program(src):
+def load_program(src: str):
   lines = src.splitlines()
   w = max((len(line) for line in lines), default=0)
   h = len(lines)
   return Program(lines=lines, w=w, h=h)
 
-def create_state(program):
+def create_state(program: Program):
   return State(
     program=program, 
     stack=[], 
-    pc=[0, 0], 
+    pc=(0, 0), 
     direction=Direction.RIGHT
   )
 
-def step_pc(state):
+def step_pc(state: State):
   x, y = state.pc
   if state.direction == Direction.RIGHT:
     x += 1
@@ -57,9 +57,9 @@ def step_pc(state):
     x -= 1
   if state.direction == Direction.UP:
     y -= 1
-  state.pc = [x, y]
+  state.pc = (x, y)
 
-def step_state(state):
+def step_state(state: State):
   x, y = state.pc
   c = state.program[x, y]
   
@@ -74,7 +74,7 @@ def step_state(state):
 
   step_pc(state)
 
-def create_app(state):
+def create_app(state: State):
   from termpixels import App, Buffer, Color
   a = App()
 
@@ -91,7 +91,7 @@ def create_app(state):
 
   return a
 
-def main(path):
+def main(path: str):
   with open(path, "r") as f:
     src = f.read()
     program = load_program(src)
