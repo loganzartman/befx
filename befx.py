@@ -249,10 +249,16 @@ def draw_program(state: State):
         term.write(char)
     term.write('\n')
 
+def maybe_chr(code: int):
+  try:
+    return chr(code)
+  except ValueError:
+    return '�'
+
 def draw_stack(state: State):
   term.sgr('34')
   items_int = ", ".join(str(x) for x in state.stack)
-  items_str = ", ".join(chr(x) for x in state.stack)
+  items_str = ", ".join(maybe_chr(x) for x in state.stack)
   term.write(f"Stack (int): {items_int}\n")
   term.write(f"Stack (str): {items_str}\n")
   term.sgr('0')
