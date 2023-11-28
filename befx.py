@@ -85,7 +85,9 @@ def execute_instruction(state: State, c: str):
     state.push(ord(c))
     return
 
-  if c == '+':
+  if c == ' ':
+    pass
+  elif c == '+':
     a = state.pop() 
     b = state.pop() 
     state.stack.append(a + b)
@@ -187,6 +189,8 @@ def execute_instruction(state: State, c: str):
     raise ExitProgram()
   elif '0' <= c <= '9':
     state.stack.append(int(c))
+  else:
+    raise NotImplementedError(f'Unsupported command "{c}"')
 
 def step_state(state: State):
   x, y = state.pc
