@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from random import choice
 from time import sleep
+import term
 
 class ExitProgram(Exception):
   pass
@@ -177,80 +178,42 @@ def step_state(state: State):
   execute_instruction(state, c)
   step_pc(state)
 
-write_buffer: list[str] = []
-def write(s: str):
-  write_buffer.append(s)
-
-def flush():
-  print("".join(write_buffer), end="", flush=True)
-  write_buffer.clear()
-  
-def term_alt():
-  write("\x1b[?1049h")
-
-def term_noalt():
-  write("\x1b[?1049l")
-
-def term_clear():
-  write("\x1b[2J\x1b[H")
-
-def term_sgr(val: str):
-  write(f"\x1b[{val}m")
-
-def term_reset():
-  write('\x1b[0m\x1b[?25h')
-
-def term_moveto(x: int, y: int):
-  write(f"\x1b[{y};{x}H")
-
-def term_cursor():
-  write("\x1b[?25h")
-
-def term_nocursor():
-  write("\x1b[?25l")
-
-def term_savecursor():
-  write("\x1b[s")
-
-def term_loadcursor():
-  write("\x1b[u")
-
 def read_input(state: State, prompt: str):
-  term_savecursor()
-  term_moveto(0, state.program.h + 2)
-  term_cursor()
-  term_sgr('33')
-  flush()
+  term.savecursor()
+  term.moveto(0, state.program.h + 2)
+  term.cursor()
+  term.sgr('33')
+  term.flush()
   
   print(prompt, end="")
-  term_sgr('0')
-  flush()
+  term.sgr('0')
+  term.flush()
 
   result = input()
 
-  term_loadcursor()
-  flush()
+  term.loadcursor()
+  term.flush()
   return result
 
 def draw_state(state: State):
-  term_clear()
-  term_nocursor()
+  term.clear()
+  term.nocursor()
   pc_x, pc_y = state.pc
   for y, line in enumerate(state.program.lines):
     for x, char in enumerate(line.ljust(state.program.w)):
       if x == pc_x and y == pc_y:
-        term_sgr('30')
-        term_sgr('47')
-        write(char)
-        term_sgr('0')
+        term.sgr('30')
+        term.sgr('47')
+        term.write(char)
+        term.sgr('0')
       else:
-        write(char)
-    write('\n')
-  flush()
+        term.write(char)
+    term.write('\n')
+  term.flush()
 
 def start_app(state: State):
   try:
-    term_alt()
+    term.alt()
     while True:
       try:
         draw_state(state)
@@ -259,11 +222,11 @@ def start_app(state: State):
       except ExitProgram:
         break
   except KeyboardInterrupt:
-    term_clear()
+    term.clear()
   finally:
-    term_noalt()
-    term_reset()
-    flush()
+    term.noalt()
+    term.reset()
+    term.flush()
 
 def main(path: str):
   with open(path, "r") as f:
