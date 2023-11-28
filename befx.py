@@ -90,40 +90,40 @@ def execute_instruction(state: State, c: str):
   elif c == '+':
     a = state.pop() 
     b = state.pop() 
-    state.stack.append(a + b)
+    state.push(a + b)
   elif c == '-':
     a = state.pop() 
     b = state.pop() 
-    state.stack.append(b - a)
+    state.push(b - a)
   elif c == '*':
     a = state.pop() 
     b = state.pop() 
-    state.stack.append(a * b)
+    state.push(a * b)
   elif c == '/':
     a = state.pop()
     b = state.pop()
     if a == 0:
       raise Exception('Computing b/a where a=0; what result do you want?') 
-    state.stack.append(b // a)
+    state.push(b // a)
   elif c == '%':
     a = state.pop()
     b = state.pop()
     if a == 0:
       raise Exception('Computing b%a where a=0; what result do you want?') 
-    state.stack.append(b % a)
+    state.push(b % a)
   elif c == '!':
     a = state.pop()
     if a == 0:
-      state.stack.append(1)
+      state.push(1)
     else:
-      state.stack.append(0)
+      state.push(0)
   elif c == '`':
     a = state.pop()
     b = state.pop()
     if b > a:
-      state.stack.append(1)
+      state.push(1)
     else:
-      state.stack.append(0)
+      state.push(0)
   elif c == '>':
     state.direction = Direction.RIGHT
   elif c == 'v':
@@ -155,8 +155,8 @@ def execute_instruction(state: State, c: str):
   elif c == '\\':
     a = state.pop()
     b = state.pop()
-    state.stack.append(a)
-    state.stack.append(b)
+    state.push(a)
+    state.push(b)
   elif c == '$':
     state.pop()
   elif c == '.':
@@ -175,7 +175,7 @@ def execute_instruction(state: State, c: str):
     while True:
       try:
         val = int(read_input(state, "Input integer > "))
-        state.stack.append(val)
+        state.push(val)
         break
       except ValueError:
         print("Invalid input")
@@ -183,12 +183,12 @@ def execute_instruction(state: State, c: str):
     while True:
       char = read_input(state, "Input character > ")
       if len(char) == 1:
-        state.stack.append(ord(char))
+        state.push(ord(char))
       print("Invalid input")
   elif c == '@':
     raise ExitProgram()
   elif '0' <= c <= '9':
-    state.stack.append(int(c))
+    state.push(int(c))
   else:
     raise NotImplementedError(f'Unsupported command "{c}"')
 
