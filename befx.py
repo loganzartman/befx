@@ -38,6 +38,10 @@ class State:
   stack: list[int]
   pc: tuple[int, int]
   direction: Direction
+  stringmode: bool
+
+  def push(self, val: int):
+    self.stack.append(val)
 
   def pop(self):
     if not len(self.stack):
@@ -55,7 +59,8 @@ def create_state(program: Program):
     program=program, 
     stack=[], 
     pc=(0, 0), 
-    direction=Direction.RIGHT
+    direction=Direction.RIGHT,
+    stringmode=False
   )
 
 def step_pc(state: State):
@@ -71,6 +76,10 @@ def step_pc(state: State):
   state.pc = (x % state.program.w, y % state.program.h)
 
 def execute_instruction(state: State, c: str):
+  if state.stringmode and c != '"':
+    state.push(ord(c))
+    return
+
   if c == '+':
     a = state.pop() 
     b = state.pop() 
@@ -131,7 +140,7 @@ def execute_instruction(state: State, c: str):
     else:
       state.direction = Direction.UP
   elif c == '"':
-    raise NotImplementedError()
+    state.stringmode = not state.stringmode
   elif c == ':':
     state.stack.append(state.stack[-1])
   elif c == '\\':
