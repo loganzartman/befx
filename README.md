@@ -1,6 +1,6 @@
 # befx
 
-Execute [Befunge][befunge] code.
+Execute [Befunge][befunge] code. "beef-ex".
 
 ![demo image](demo.gif)
 
