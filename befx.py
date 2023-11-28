@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from random import choice
+from time import sleep
 
 class ExitProgram(Exception):
   pass
@@ -159,33 +160,62 @@ def step_state(state: State):
   execute_instruction(state, c)
   step_pc(state)
 
-def create_app(state: State):
-  from termpixels import App, Buffer, Color
-  a = App()
+write_buffer: list[str] = []
+def write(s: str):
+  write_buffer.append(s)
 
-  @a.on("frame")
-  def frame():
-    try:
-      step_state(state)
-    except ExitProgram:
-      a.stop()
-    
-    a.screen.clear()
-    for i, line in enumerate(state.program.lines):
-      a.screen.print(line, 0, i)
-    x, y = state.pc
-    a.screen[x, y].bg = Color.rgb(1,1,1)
-    a.screen[x, y].fg = Color.rgb(0,0,0)
-    a.screen.update()
+def flush():
+  print("".join(write_buffer), end="", flush=True)
+  write_buffer.clear()
 
-  return a
+def term_clear():
+  write("\x1b[2J\x1b[H")
+
+def term_sgr(val: str):
+  write(f"\x1b[{val}m")
+
+def term_reset():
+  write('\x1b[0m\x1b[?25h')
+
+def term_moveto(x: int, y: int):
+  write("\x1b[{y};{x}H")
+
+def draw_state(state: State):
+  term_clear()
+  pc_x, pc_y = state.pc
+  for y, line in enumerate(state.program.lines):
+    for x, char in enumerate(line.ljust(state.program.w)):
+      if x == pc_x and y == pc_y:
+        term_sgr('30')
+        term_sgr('47')
+        write(char)
+        term_sgr('0')
+      else:
+        write(char)
+    write('\n')
+  flush()
+
+def start_app(state: State):
+  try:
+    while True:
+      try:
+        step_state(state)
+        draw_state(state)
+        sleep(1/30)
+      except ExitProgram:
+        break
+  except KeyboardInterrupt:
+    term_clear()
+  finally:
+    term_reset()
+    flush()
 
 def main(path: str):
   with open(path, "r") as f:
     src = f.read()
     program = load_program(src)
     state = create_state(program)
-    create_app(state).run()
+    start_app(state)
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
