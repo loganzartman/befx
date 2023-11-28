@@ -147,7 +147,9 @@ def execute_instruction(state: State, c: str):
   elif c == '"':
     state.stringmode = not state.stringmode
   elif c == ':':
-    state.stack.append(state.stack[-1])
+    a = state.pop()
+    state.push(a)
+    state.push(a)
   elif c == '\\':
     a = state.pop()
     b = state.pop()
