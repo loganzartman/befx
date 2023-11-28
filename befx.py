@@ -39,6 +39,7 @@ class State:
   pc: tuple[int, int]
   direction: Direction
   stringmode: bool
+  output: list[str]
 
   def push(self, val: int):
     self.stack.append(val)
@@ -47,6 +48,9 @@ class State:
     if not len(self.stack):
       return 0
     return self.stack.pop()
+  
+  def get_output(self):
+    return "".join(self.output)
 
 def load_program(src: str):
   lines = src.splitlines()
@@ -60,7 +64,8 @@ def create_state(program: Program):
     stack=[], 
     pc=(0, 0), 
     direction=Direction.RIGHT,
-    stringmode=False
+    stringmode=False,
+    output=[]
   )
 
 def step_pc(state: State):
@@ -152,10 +157,10 @@ def execute_instruction(state: State, c: str):
     state.pop()
   elif c == '.':
     a = state.pop()
-    sys.stderr.write(str(a))
+    state.output.append(str(a))
   elif c == ',':
     a = state.pop()
-    sys.stderr.write(chr(a))
+    state.output.append(chr(a))
   elif c == '#':
     step_pc(state)
   elif c == 'g':
@@ -236,6 +241,7 @@ def start_app(state: State):
     term.noalt()
     term.reset()
     term.flush()
+    print(state.get_output())
 
 def main(path: str):
   with open(path, "r") as f:
