@@ -3,6 +3,10 @@
 import sys
 from dataclasses import dataclass
 from enum import Enum
+from random import choice
+
+class ExitProgram(Exception):
+  pass
 
 @dataclass
 class Program:
@@ -57,13 +61,47 @@ def step_pc(state: State):
     x -= 1
   if state.direction == Direction.UP:
     y -= 1
-  state.pc = (x, y)
+  state.pc = (x % state.program.w, y % state.program.h)
 
-def step_state(state: State):
-  x, y = state.pc
-  c = state.program[x, y]
-  
-  if c == '>':
+def execute_instruction(state: State, c: str):
+  if c == '+':
+    a = state.stack.pop() 
+    b = state.stack.pop() 
+    state.stack.append(a + b)
+  elif c == '-':
+    a = state.stack.pop() 
+    b = state.stack.pop() 
+    state.stack.append(b - a)
+  elif c == '*':
+    a = state.stack.pop() 
+    b = state.stack.pop() 
+    state.stack.append(a * b)
+  elif c == '/':
+    a = state.stack.pop()
+    b = state.stack.pop()
+    if a == 0:
+      raise Exception('Computing b/a where a=0; what result do you want?') 
+    state.stack.append(b // a)
+  elif c == '%':
+    a = state.stack.pop()
+    b = state.stack.pop()
+    if a == 0:
+      raise Exception('Computing b%a where a=0; what result do you want?') 
+    state.stack.append(b % a)
+  elif c == '!':
+    a = state.stack.pop()
+    if a == 0:
+      state.stack.append(1)
+    else:
+      state.stack.append(0)
+  elif c == '`':
+    a = state.stack.pop()
+    b = state.stack.pop()
+    if b > a:
+      state.stack.append(1)
+    else:
+      state.stack.append(0)
+  elif c == '>':
     state.direction = Direction.RIGHT
   elif c == 'v':
     state.direction = Direction.DOWN
@@ -71,7 +109,54 @@ def step_state(state: State):
     state.direction = Direction.LEFT
   elif c == '^':
     state.direction = Direction.UP
+  elif c == '?':
+    state.direction = choice([d for d in Direction])
+  elif c == '_':
+    a = state.stack.pop()
+    if a == 0:
+      state.direction = Direction.RIGHT
+    else:
+      state.direction = Direction.LEFT
+  elif c == '|':
+    a = state.stack.pop()
+    if a == 0:
+      state.direction = Direction.DOWN
+    else:
+      state.direction = Direction.UP
+  elif c == '"':
+    raise NotImplementedError()
+  elif c == ':':
+    state.stack.append(state.stack[-1])
+  elif c == '\\':
+    a = state.stack.pop()
+    b = state.stack.pop()
+    state.stack.append(a)
+    state.stack.append(b)
+  elif c == '$':
+    state.stack.pop()
+  elif c == '.':
+    a = state.stack.pop()
+    sys.stderr.write(str(a))
+  elif c == ',':
+    a = state.stack.pop()
+    sys.stderr.write(chr(a))
+  elif c == '#':
+    step_pc(state)
+  elif c == 'g':
+    raise NotImplementedError()
+  elif c == 'p':
+    raise NotImplementedError()
+  elif c == '&':
+    raise NotImplementedError()
+  elif c == '@':
+    raise ExitProgram()
+  elif '0' <= c <= '9':
+    state.stack.append(int(c))
 
+def step_state(state: State):
+  x, y = state.pc
+  c = state.program[x, y]
+  execute_instruction(state, c)
   step_pc(state)
 
 def create_app(state: State):
@@ -80,7 +165,11 @@ def create_app(state: State):
 
   @a.on("frame")
   def frame():
-    step_state(state)
+    try:
+      step_state(state)
+    except ExitProgram:
+      a.stop()
+    
     a.screen.clear()
     for i, line in enumerate(state.program.lines):
       a.screen.print(line, 0, i)
