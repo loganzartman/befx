@@ -184,6 +184,7 @@ def execute_instruction(state: State, c: str):
       char = read_input(state, "Input character > ")
       if len(char) == 1:
         state.push(ord(char))
+        break
       print("Invalid input")
   elif c == '@':
     raise ExitProgram()
