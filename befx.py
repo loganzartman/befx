@@ -1,10 +1,11 @@
 #! /usr/bin/python3
 
-import sys
+import argparse
 from dataclasses import dataclass
 from enum import Enum
 from random import choice
 from time import sleep
+
 import term
 
 class ExitProgram(Exception):
@@ -274,14 +275,14 @@ def draw_state(state: State):
   draw_output(state)
   term.flush()
 
-def start_app(state: State):
+def start_app(state: State, framerate: int):
   try:
     term.savecursor()
     while True:
       try:
         draw_state(state)
         step_state(state)
-        sleep(1/30)
+        sleep(1/framerate)
       except ExitProgram:
         break
   except KeyboardInterrupt:
@@ -289,18 +290,40 @@ def start_app(state: State):
   finally:
     term.reset()
     term.flush()
-    # print(state.get_output())
 
-def main(path: str):
+def run_to_exit(state: State):
+  try:
+    while True:
+      try:
+        step_state(state)
+        print(state.get_output(), end="")
+        state.output.clear()
+      except ExitProgram:
+        break
+  except KeyboardInterrupt:
+    pass
+  print()
+
+def main(path: str, framerate: int, headless: bool):
   with open(path, "r") as f:
     src = f.read()
     program = load_program(src)
     state = create_state(program)
-    start_app(state)
+    if headless:
+      run_to_exit(state)
+    else:
+      start_app(state, framerate)
+
+def parse_args():
+  parser = argparse.ArgumentParser(description="Animation script arguments")
+  parser.add_argument('path', type=str,
+                      help='Path to the script to execute')
+  parser.add_argument('-f', '--framerate', type=int, default=30,
+                      help='Set the animation framerate (in frames per second)')
+  parser.add_argument('-H', '--headless', action='store_true',
+                      help='Enable headless mode; only output the results')
+  return parser.parse_args()
 
 if __name__ == '__main__':
-  if len(sys.argv) < 2:
-    print("Usage: befx.py path")
-    exit(-1)
-  path = sys.argv[1]
-  main(path)
+  args = parse_args()
+  main(args.path, args.framerate, args.headless)
