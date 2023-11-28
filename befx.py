@@ -38,6 +38,11 @@ class State:
   pc: tuple[int, int]
   direction: Direction
 
+  def pop(self):
+    if not len(self.stack):
+      return 0
+    return self.stack.pop()
+
 def load_program(src: str):
   lines = src.splitlines()
   w = max((len(line) for line in lines), default=0)
@@ -66,38 +71,38 @@ def step_pc(state: State):
 
 def execute_instruction(state: State, c: str):
   if c == '+':
-    a = state.stack.pop() 
-    b = state.stack.pop() 
+    a = state.pop() 
+    b = state.pop() 
     state.stack.append(a + b)
   elif c == '-':
-    a = state.stack.pop() 
-    b = state.stack.pop() 
+    a = state.pop() 
+    b = state.pop() 
     state.stack.append(b - a)
   elif c == '*':
-    a = state.stack.pop() 
-    b = state.stack.pop() 
+    a = state.pop() 
+    b = state.pop() 
     state.stack.append(a * b)
   elif c == '/':
-    a = state.stack.pop()
-    b = state.stack.pop()
+    a = state.pop()
+    b = state.pop()
     if a == 0:
       raise Exception('Computing b/a where a=0; what result do you want?') 
     state.stack.append(b // a)
   elif c == '%':
-    a = state.stack.pop()
-    b = state.stack.pop()
+    a = state.pop()
+    b = state.pop()
     if a == 0:
       raise Exception('Computing b%a where a=0; what result do you want?') 
     state.stack.append(b % a)
   elif c == '!':
-    a = state.stack.pop()
+    a = state.pop()
     if a == 0:
       state.stack.append(1)
     else:
       state.stack.append(0)
   elif c == '`':
-    a = state.stack.pop()
-    b = state.stack.pop()
+    a = state.pop()
+    b = state.pop()
     if b > a:
       state.stack.append(1)
     else:
@@ -113,13 +118,13 @@ def execute_instruction(state: State, c: str):
   elif c == '?':
     state.direction = choice([d for d in Direction])
   elif c == '_':
-    a = state.stack.pop()
+    a = state.pop()
     if a == 0:
       state.direction = Direction.RIGHT
     else:
       state.direction = Direction.LEFT
   elif c == '|':
-    a = state.stack.pop()
+    a = state.pop()
     if a == 0:
       state.direction = Direction.DOWN
     else:
@@ -129,17 +134,17 @@ def execute_instruction(state: State, c: str):
   elif c == ':':
     state.stack.append(state.stack[-1])
   elif c == '\\':
-    a = state.stack.pop()
-    b = state.stack.pop()
+    a = state.pop()
+    b = state.pop()
     state.stack.append(a)
     state.stack.append(b)
   elif c == '$':
-    state.stack.pop()
+    state.pop()
   elif c == '.':
-    a = state.stack.pop()
+    a = state.pop()
     sys.stderr.write(str(a))
   elif c == ',':
-    a = state.stack.pop()
+    a = state.pop()
     sys.stderr.write(chr(a))
   elif c == '#':
     step_pc(state)
@@ -148,7 +153,19 @@ def execute_instruction(state: State, c: str):
   elif c == 'p':
     raise NotImplementedError()
   elif c == '&':
-    raise NotImplementedError()
+    while True:
+      try:
+        val = int(read_input(state, "Input integer > "))
+        state.stack.append(val)
+        break
+      except ValueError:
+        print("Invalid input")
+  elif c == '~':
+    while True:
+      char = read_input(state, "Input character > ")
+      if len(char) == 1:
+        state.stack.append(ord(char))
+      print("Invalid input")
   elif c == '@':
     raise ExitProgram()
   elif '0' <= c <= '9':
@@ -167,6 +184,12 @@ def write(s: str):
 def flush():
   print("".join(write_buffer), end="", flush=True)
   write_buffer.clear()
+  
+def term_alt():
+  write("\x1b[?1049h")
+
+def term_noalt():
+  write("\x1b[?1049l")
 
 def term_clear():
   write("\x1b[2J\x1b[H")
@@ -178,10 +201,40 @@ def term_reset():
   write('\x1b[0m\x1b[?25h')
 
 def term_moveto(x: int, y: int):
-  write("\x1b[{y};{x}H")
+  write(f"\x1b[{y};{x}H")
+
+def term_cursor():
+  write("\x1b[?25h")
+
+def term_nocursor():
+  write("\x1b[?25l")
+
+def term_savecursor():
+  write("\x1b[s")
+
+def term_loadcursor():
+  write("\x1b[u")
+
+def read_input(state: State, prompt: str):
+  term_savecursor()
+  term_moveto(0, state.program.h + 2)
+  term_cursor()
+  term_sgr('33')
+  flush()
+  
+  print(prompt, end="")
+  term_sgr('0')
+  flush()
+
+  result = input()
+
+  term_loadcursor()
+  flush()
+  return result
 
 def draw_state(state: State):
   term_clear()
+  term_nocursor()
   pc_x, pc_y = state.pc
   for y, line in enumerate(state.program.lines):
     for x, char in enumerate(line.ljust(state.program.w)):
@@ -197,16 +250,18 @@ def draw_state(state: State):
 
 def start_app(state: State):
   try:
+    term_alt()
     while True:
       try:
-        step_state(state)
         draw_state(state)
+        step_state(state)
         sleep(1/30)
       except ExitProgram:
         break
   except KeyboardInterrupt:
     term_clear()
   finally:
+    term_noalt()
     term_reset()
     flush()
 
